@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -21,6 +20,7 @@ class DatabaseSeeder extends Seeder
             PropertySeeder::class,  // Then properties (depends on users and regions)
             LeadSeeder::class,      // Then leads (depends on properties, users, and services)
             QuoteSeeder::class,     // Finally quotes (depends on leads and users)
+            ProviderRatingSeeder::class,
         ]);
     }
 }
