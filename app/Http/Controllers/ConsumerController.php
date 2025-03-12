@@ -6,6 +6,7 @@ use App\Models\Region;
 use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ConsumerController extends Controller
 {
@@ -26,7 +27,7 @@ class ConsumerController extends Controller
                     ->get();
             } catch (\Exception $e) {
                 // Log the error
-                \Log::error('Error querying services: '.$e->getMessage());
+                Log::error('Error querying services: '.$e->getMessage());
 
                 // Try with integer 1 as a fallback
                 try {
@@ -36,7 +37,7 @@ class ConsumerController extends Controller
                         ->get();
                 } catch (\Exception $e2) {
                     // Log the error
-                    \Log::error('Error querying services with fallback: '.$e2->getMessage());
+                    Log::error('Error querying services with fallback: '.$e2->getMessage());
 
                     // Return an empty collection as a last resort
                     $services = collect();

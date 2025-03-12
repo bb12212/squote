@@ -47,7 +47,24 @@ class Service extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        // Try with boolean true first
+        try {
+            return $query->where('is_active', true);
+        } catch (\Exception $e) {
+            // Log the error
+            \Illuminate\Support\Facades\Log::error('Error in scopeActive with boolean: '.$e->getMessage());
+
+            // Try with integer 1 as a fallback
+            try {
+                return $query->whereRaw('is_active = 1');
+            } catch (\Exception $e2) {
+                // Log the error
+                \Illuminate\Support\Facades\Log::error('Error in scopeActive with integer: '.$e2->getMessage());
+
+                // Return the original query as a last resort
+                return $query;
+            }
+        }
     }
 
     /**
