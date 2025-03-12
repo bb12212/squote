@@ -1,33 +1,58 @@
 <?php
 
-// Bootstrap Laravel
+// Display all errors for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Load Laravel's autoloader
 require __DIR__.'/vendor/autoload.php';
+
+// Load environment variables
 $app = require_once __DIR__.'/bootstrap/app.php';
-$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
+$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
-// Test database connection
+// Import the DB facade
+use Illuminate\Support\Facades\DB;
+
+echo 'Laravel Database Configuration:<br>';
+echo '-------------------------------<br>';
+
+// Get database configuration
+$connection = config('database.default');
+$host = config('database.connections.'.$connection.'.host');
+$port = config('database.connections.'.$connection.'.port');
+$database = config('database.connections.'.$connection.'.database');
+$username = config('database.connections.'.$connection.'.username');
+$password = config('database.connections.'.$connection.'.password') ? 'Set (hidden)' : 'Not set';
+
+echo "Default Connection: $connection<br>";
+echo "Host: $host<br>";
+echo "Port: $port<br>";
+echo "Database: $database<br>";
+echo "Username: $username<br>";
+echo "Password: $password<br>";
+
+// Try to connect to the database using Laravel's DB facade
 try {
-    $connection = \Illuminate\Support\Facades\DB::connection();
-    $pdo = $connection->getPdo();
+    $result = DB::select('SELECT current_timestamp');
+    echo 'Connection successful!<br>';
+    echo 'Current database time: '.$result[0]->current_timestamp.'<br>';
 
-    echo 'Successfully connected to database: '.$connection->getDatabaseName()."\n";
-    echo "Connection details:\n";
-    echo '  Driver: '.$connection->getDriverName()."\n";
-    echo '  Host: '.$connection->getConfig('host')."\n";
-    echo '  Database: '.$connection->getDatabaseName()."\n";
+    // Check if services table exists
+    $tableExists = DB::select("SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'services'
+    ) as exists")[0]->exists;
 
-    // Test query
-    $result = \Illuminate\Support\Facades\DB::select('SELECT 1 as test');
-    echo 'Test query result: '.print_r($result, true)."\n";
+    echo 'Services table exists: '.($tableExists ? 'Yes' : 'No').'<br>';
 
+    // If services table exists, try to query it
+    if ($tableExists) {
+        $services = DB::select('SELECT * FROM services WHERE is_active = true ORDER BY display_order ASC');
+        echo 'Found '.count($services).' active services<br>';
+    }
 } catch (Exception $e) {
-    echo 'Connection failed: '.$e->getMessage()."\n";
-
-    // Show current configuration
-    echo "\nCurrent database configuration:\n";
-    echo '  DB_CONNECTION: '.env('DB_CONNECTION')."\n";
-    echo '  DB_HOST: '.env('DB_HOST')."\n";
-    echo '  DB_PORT: '.env('DB_PORT')."\n";
-    echo '  DB_DATABASE: '.env('DB_DATABASE')."\n";
-    echo '  DB_USERNAME: '.env('DB_USERNAME')."\n";
+    echo 'Connection failed: '.$e->getMessage().'<br>';
 }
