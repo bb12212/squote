@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Region;
 use App\Models\Service;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ConsumerController extends Controller
 {
@@ -13,7 +14,36 @@ class ConsumerController extends Controller
      */
     public function index()
     {
+        // Use the scope defined in the Service model, which uses boolean true
         $services = Service::active()->ordered()->get();
+
+        // If the above query fails, try a direct query with boolean true
+        if ($services->isEmpty()) {
+            try {
+                $services = DB::table('services')
+                    ->where('is_active', true)
+                    ->orderBy('display_order')
+                    ->get();
+            } catch (\Exception $e) {
+                // Log the error
+                \Log::error('Error querying services: '.$e->getMessage());
+
+                // Try with integer 1 as a fallback
+                try {
+                    $services = DB::table('services')
+                        ->whereRaw('is_active = 1')
+                        ->orderBy('display_order')
+                        ->get();
+                } catch (\Exception $e2) {
+                    // Log the error
+                    \Log::error('Error querying services with fallback: '.$e2->getMessage());
+
+                    // Return an empty collection as a last resort
+                    $services = collect();
+                }
+            }
+        }
+
         return view('consumer.index', compact('services'));
     }
 
@@ -48,11 +78,12 @@ class ConsumerController extends Controller
     public function serviceSelection()
     {
         // Check if postcode is in session
-        if (!session('quote.postcode')) {
+        if (! session('quote.postcode')) {
             return redirect()->route('consumer.index')->with('error', 'Please enter your postcode first.');
         }
 
         $services = Service::active()->ordered()->get();
+
         return view('consumer.service-selection', compact('services'));
     }
 
@@ -78,7 +109,7 @@ class ConsumerController extends Controller
     public function propertyDetails()
     {
         // Check if services are in session
-        if (!session('quote.services')) {
+        if (! session('quote.services')) {
             return redirect()->route('consumer.service-selection')->with('error', 'Please select at least one service.');
         }
 
@@ -91,9 +122,9 @@ class ConsumerController extends Controller
     public function storePropertyDetails(Request $request)
     {
         $request->validate([
-            'property_type' => 'required|string|in:' . implode(',', array_keys(\App\Models\Property::propertyTypes())),
-            'roof_type' => 'nullable|string|in:' . implode(',', array_keys(\App\Models\Property::roofTypes())),
-            'roof_material' => 'nullable|string|in:' . implode(',', array_keys(\App\Models\Property::roofMaterials())),
+            'property_type' => 'required|string|in:'.implode(',', array_keys(\App\Models\Property::propertyTypes())),
+            'roof_type' => 'nullable|string|in:'.implode(',', array_keys(\App\Models\Property::roofTypes())),
+            'roof_material' => 'nullable|string|in:'.implode(',', array_keys(\App\Models\Property::roofMaterials())),
             'has_significant_shading' => 'nullable|boolean',
             'monthly_energy_bill' => 'nullable|numeric|min:0',
             'annual_energy_usage' => 'nullable|integer|min:0',
@@ -111,7 +142,7 @@ class ConsumerController extends Controller
     public function contactInformation()
     {
         // Check if property details are in session
-        if (!session('quote.property_details')) {
+        if (! session('quote.property_details')) {
             return redirect()->route('consumer.property-details')->with('error', 'Please provide your property details.');
         }
 
@@ -143,7 +174,7 @@ class ConsumerController extends Controller
     public function additionalDetails()
     {
         // Check if contact information is in session
-        if (!session('quote.contact_information')) {
+        if (! session('quote.contact_information')) {
             return redirect()->route('consumer.contact-information')->with('error', 'Please provide your contact information.');
         }
 
@@ -174,7 +205,7 @@ class ConsumerController extends Controller
     public function confirmation()
     {
         // Check if lead has been processed
-        if (!session('quote.lead_processed')) {
+        if (! session('quote.lead_processed')) {
             return redirect()->route('consumer.index')->with('error', 'Please complete the quote request form.');
         }
 

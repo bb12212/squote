@@ -3,6 +3,11 @@
     "web": {
         "document_root": "public"
     },
+    "hooks": {
+        "postdeploy": [
+            "./deploy-hook.sh"
+        ]
+    },
     "env": {
         "APP_ENV": "production",
         "APP_DEBUG": "true",
